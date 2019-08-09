@@ -43,7 +43,7 @@ def create_bitmask(frame):
     image[comb == 0] = [0, 0, 0]
     flame = cv2.bitwise_and(image, image, mask=hsv_mask)
     grey = cv2.cvtColor(flame, cv2.cv2.COLOR_BGR2GRAY)
-    BW_flame = cv2.threshold(grey, 10, 255, cv2.THRESH_BINARY)[1]
+    BW_flame = cv2.threshold(grey, 10, 1, cv2.THRESH_BINARY)[1]
     return BW_flame
 
 
