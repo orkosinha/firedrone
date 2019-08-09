@@ -26,4 +26,5 @@ python3 fireDrone.py
 The program will ask you for the scene ID you want to run. A full list of scene IDs can be found [here](https://github.com/solliancenet/firedrone-hack-starter/blob/master/direct-runs.md).
 
 ## Utilities
-We used `run_end.py` to end runs that ended unexpectedly and `frameGrab.py` to compile a list of frames and stiched images to use in our model building.
+The `./utilities` folder has a few scripts that we used throughout our development process
+We used `run_end.py` to end runs that ended unexpectedly and `frameGrab.py` to compile a folder of frames and stiched images to use in our model building. The `run_history.py` is generates `last_run.json` to look at the details of our last run. We also used `ws.py` to interact with our drone through the python shell.

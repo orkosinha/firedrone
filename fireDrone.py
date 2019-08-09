@@ -53,61 +53,82 @@ def score(move_dir, bitmask):
         f.write(frame)
     frame = cv2.imread('./frame.png')
 
-    # Phase 1: Use our natural network for fire presence
-    headers = {'Content-Type': 'application/json'}
-    natural_uri = 'http://fc91f275-eaa2-464e-8bff-11b3108b8baa.eastus.azurecontainer.io/score'
-    NATURAL_DIMS = 64
+    if strategy == "natural":
+        headers = {'Content-Type': 'application/json'}
+        natural_uri = 'http://fc91f275-eaa2-464e-8bff-11b3108b8baa.eastus.azurecontainer.io/score'
+        NATURAL_DIMS = 64
 
-    natural_frame = cv2.resize(frame, dsize=(NATURAL_DIMS, NATURAL_DIMS),
-                               interpolation=cv2.INTER_AREA)
+        natural_frame = cv2.resize(frame, dsize=(NATURAL_DIMS, NATURAL_DIMS),
+                                   interpolation=cv2.INTER_AREA)
 
-    test_data = json.dumps({'image': natural_frame.tolist()})
-    response = requests.post(natural_uri, data=test_data, headers=headers)
-    if (response.json()['fire'] > 85):
-        bitmask = create_bitmask(frame)
-        # Score Bitmask
-        workspace.directrun_score_pixels(
-            run_id, bitmask.flatten().astype(int).tolist())
-        print("Score from natural")
+        test_data = json.dumps({'image': natural_frame.tolist()})
+        response = requests.post(natural_uri, data=test_data, headers=headers)
+        if (response.json()['fire'] > 85):
+            bitmask = create_bitmask(frame)
+            # Score Bitmask
+            workspace.directrun_score_pixels(
+                run_id, bitmask.flatten().astype(int).tolist())
+            print("Score from natural")
 
         return bitmask
 
-    else:
-        # Phase 2: Use firenet for fire presence
-        firenet_uri = 'http://26f07c9d-89dc-4a62-bcbc-1f6a8517df53.eastus.azurecontainer.io/score'
-        FIRENET_DIMS = 224
-        firenet_frame = cv2.resize(frame, dsize=(FIRENET_DIMS, FIRENET_DIMS),
+    elif strategy == "multi":
+        # Phase 1: Use our natural network for fire presence
+        headers = {'Content-Type': 'application/json'}
+        natural_uri = 'http://fc91f275-eaa2-464e-8bff-11b3108b8baa.eastus.azurecontainer.io/score'
+        NATURAL_DIMS = 64
+
+        natural_frame = cv2.resize(frame, dsize=(NATURAL_DIMS, NATURAL_DIMS),
                                    interpolation=cv2.INTER_AREA)
-        test_data = json.dumps({'image': firenet_frame.tolist()})
-        response = requests.post(firenet_uri, data=test_data, headers=headers)
-        if (response.json()['fire'] > 0.85):
+
+        test_data = json.dumps({'image': natural_frame.tolist()})
+        response = requests.post(natural_uri, data=test_data, headers=headers)
+        if (response.json()['fire'] > 85):
             bitmask = create_bitmask(frame)
-            # Score bitmask
+            # Score Bitmask
             workspace.directrun_score_pixels(
                 run_id, bitmask.flatten().astype(int).tolist())
-            print("Score from firenet")
+            print("Score from natural")
 
             return bitmask
 
         else:
-            if (move_dir == "right"):
-                print("Shifting persistant mask right")
-                bitmask = np.roll(bitmask, -100)
-                bitmask[:, -100] = 0
-            elif (move_dir == "left"):
-                print("Shifting persistant mask left")
-                bitmask = np.roll(bitmask, 100)
-                bitmask[:, 99] = 0
-            elif (move_dir == "up"):
-                bitmask = np.zeros((500, 500))
-
-            # Check if bitmask contains any 1, if so score, if not don't score
-            if [1 in bitmask]:
+            # Phase 2: Use firenet for fire presence
+            firenet_uri = 'http://26f07c9d-89dc-4a62-bcbc-1f6a8517df53.eastus.azurecontainer.io/score'
+            FIRENET_DIMS = 224
+            firenet_frame = cv2.resize(frame, dsize=(FIRENET_DIMS, FIRENET_DIMS),
+                                       interpolation=cv2.INTER_AREA)
+            test_data = json.dumps({'image': firenet_frame.tolist()})
+            response = requests.post(
+                firenet_uri, data=test_data, headers=headers)
+            if (response.json()['fire'] > 0.85):
+                bitmask = create_bitmask(frame)
+                # Score bitmask
                 workspace.directrun_score_pixels(
                     run_id, bitmask.flatten().astype(int).tolist())
-                print("Score from persistant mask")
+                print("Score from firenet")
 
-            return bitmask
+                return bitmask
+
+            else:
+                if (move_dir == "right"):
+                    print("Shifting persistant mask right")
+                    bitmask = np.roll(bitmask, -100)
+                    bitmask[:, -100] = 0
+                elif (move_dir == "left"):
+                    print("Shifting persistant mask left")
+                    bitmask = np.roll(bitmask, 100)
+                    bitmask[:, 99] = 0
+                elif (move_dir == "up"):
+                    bitmask = np.zeros((500, 500))
+
+                # Check if bitmask contains any 1, if so score, if not don't score
+                if [1 in bitmask]:
+                    workspace.directrun_score_pixels(
+                        run_id, bitmask.flatten().astype(int).tolist())
+                    print("Score from persistant mask")
+
+                return bitmask
 
 
 def start_run(scene):
@@ -166,9 +187,15 @@ def start_run(scene):
 
 def main():
     global workspace
+    global strategy
 
     print("Enter the id of the scene you would like to test")
+    strategies = ["multi", "natural"]
     scene_id = input("id? ")
+    strategy = input("strategy? ")
+    while not strategy in strategies:
+        print("Invalid strategy\n")
+        strategy = input("strategy? ")
 
     api_key = 'MaH!2iNyY1C3vfyusR%?FmDu@!mZMl9Ns8Syby?9ZPB*rJ&X$b^0fCduWj_$&9m7'
 
