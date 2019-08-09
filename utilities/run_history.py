@@ -8,7 +8,7 @@ last_run = last_run[len(last_run) - 1]
 last_entry = workspace.directrun_get_history_entry(last_run)
 
 with open('last_run.json', 'w') as outfile:
-    json.dump(entry_data, outfile)
+    json.dump(json.loads(last_entry['content']), outfile)
 
 """
 public enum DirectRunLogEventType
