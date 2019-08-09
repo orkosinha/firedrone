@@ -123,7 +123,7 @@ def score(move_dir, bitmask):
                     bitmask = np.zeros((500, 500))
 
                 # Check if bitmask contains any 1, if so score, if not don't score
-                if [1 in bitmask]:
+                if any(1 in x for x in bitmask):
                     workspace.directrun_score_pixels(
                         run_id, bitmask.flatten().astype(int).tolist())
                     print("Score from persistant mask")
