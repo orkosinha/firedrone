@@ -63,7 +63,7 @@ def score(move_dir, bitmask):
 
         test_data = json.dumps({'image': natural_frame.tolist()})
         response = requests.post(natural_uri, data=test_data, headers=headers)
-        if (response.json()['fire'] > 85):
+        if (response.json()['fire'] > 95):
             bitmask = create_bitmask(frame)
             # Score Bitmask
             workspace.directrun_score_pixels(
